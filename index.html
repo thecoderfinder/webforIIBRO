@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IIBRO</title>
+
+  <!-- Auto-refresh every 5 seconds -->
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+      overflow: hidden;
+      background: linear-gradient(-45deg, orange, black, orange, black);
+      background-size: 400% 400%;
+      animation: backgroundAnimation 20s ease infinite;
+    }
+
+    @keyframes backgroundAnimation {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .container {
+      background: rgba(255, 165, 0, 0.95);
+      padding: 40px 50px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      transform: scale(0);
+      animation: popIn 1s forwards;
+    }
+
+    @keyframes popIn { to { transform: scale(1); } }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .title { font-size: 56px; font-weight: 900; color: black; letter-spacing: 6px; margin-bottom: 16px; opacity: 0; animation: fadeIn 1s forwards 0.2s; }
+    .subtitle { font-size: 18px; color: black; margin-bottom: 24px; opacity: 0; animation: fadeIn 1s forwards 0.5s; }
+    .hint { font-size: 14px; opacity: 0; animation: fadeIn 1s forwards 0.8s; }
+
+    .hidden { display: none; }
+    .content-text { font-size: 16px; line-height: 1.6; margin-bottom: 24px; color: black; opacity: 0; animation: fadeIn 1s forwards 0.3s; }
+
+    .btn {
+      display: inline-block;
+      margin: 8px 12px;
+      padding: 12px 26px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 10px;
+      border: 2px solid black;
+      background-color: black;
+      color: orange;
+      text-decoration: none;
+      cursor: pointer;
+      perspective: 1000px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.6s;
+    }
+
+    .btn.secondary { background-color: orange; color: black; }
+    .btn:hover { transform: rotateY(var(--flip-direction, 180deg)) scale(1.05); }
+
+    .preview-box {
+      position: absolute;
+      width: 250px;
+      height: 180px;
+      top: 110%;
+      left: 50%;
+      transform: translateX(-50%) scale(0);
+      opacity: 0;
+      border: 2px solid black;
+      border-radius: 12px;
+      background: white;
+      overflow: hidden;
+      transition: all 0.4s ease;
+      z-index: 100;
+    }
+
+    .preview-box.show {
+      transform: translateX(-50%) scale(1);
+      opacity: 1;
+    }
+
+    .preview-box iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container" id="intro">
+    <div class="title">IIBRO</div>
+    <div class="subtitle">Official IIBRO Website</div>
+    <div class="hint">Click anywhere to continue</div>
+    <div style="margin-top:24px; position: relative;">
+      <a class="btn" href="https://github.com/thecoderfinder/iiBro" target="_blank">GitHub
+        <div class="preview-box" id="preview-github"><iframe src="https://github.com/thecoderfinder/iiBro"></iframe></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="container hidden" id="main">
+    <div class="title">What is IIBRO?</div>
+    <div class="content-text"><strong>IIBRO</strong> is a stylus/mod tool project for Gorillatag. The latest release fixes bugs, adds animations, sounds, and updates the menu and text font.</div>
+    <div class="content-text">You can download the release or the license file from GitHub, explore the source code, and see the full changelog.</div>
+    <div>
+      <a class="btn" href="https://github.com/thecoderfinder/iiBro" target="_blank">View GitHub
+        <div class="preview-box" id="preview-main-github"><iframe src="https://github.com/thecoderfinder/iiBro"></iframe></div>
+      </a>
+      <button class="btn secondary" onclick="goBack()">Back</button>
+    </div>
+  </div>
+
+  <script>
+    function randomFlipDirection(el) { el.style.setProperty('--flip-direction', Math.random() < 0.5 ? '180deg' : '-180deg'); }
+
+    function addPreviewBox(btn, boxId) {
+      const box = document.getElementById(boxId);
+      let timer;
+      btn.addEventListener('mouseenter', () => {
+        randomFlipDirection(btn);
+        timer = setTimeout(() => {
+          box.classList.add('show');
+        }, 800); // preview after 0.8s hover
+      });
+      btn.addEventListener('mouseleave', () => {
+        clearTimeout(timer);
+        box.classList.remove('show');
+      });
+    }
+
+    addPreviewBox(document.querySelector('#intro .btn'), 'preview-github');
+    addPreviewBox(document.querySelector('#main .btn'), 'preview-main-github');
+
+    document.body.addEventListener('click', function handler(event) {
+      if (!document.getElementById('main').classList.contains('hidden')) return;
+      if (!event.target.classList.contains('btn')) {
+        document.getElementById('intro').classList.add('hidden');
+        document.getElementById('main').classList.remove('hidden');
+        animateMain();
+      }
+    });
+
+    function goBack() {
+      document.getElementById('main').classList.add('hidden');
+      document.getElementById('intro').classList.remove('hidden');
+      resetAnimations();
+    }
+
+    function animateMain() {
+      const main = document.getElementById('main');
+      main.style.animation = 'popIn 1s forwards';
+      Array.from(main.querySelectorAll('.title, .content-text')).forEach((el, i) => {
+        el.style.opacity = 0;
+        el.style.animation = `fadeIn 1s forwards ${0.2 + i*0.3}s`;
+      });
+    }
+
+    function resetAnimations() {
+      const intro = document.getElementById('intro');
+      intro.style.animation = 'popIn 1s forwards';
+      Array.from(intro.querySelectorAll('.title, .subtitle, .hint')).forEach((el, i) => {
+        el.style.opacity = 0;
+        el.style.animation = `fadeIn 1s forwards ${0.2 + i*0.3}s`;
+      });
+    }
+  </script>
+
+</body>
+</html>
