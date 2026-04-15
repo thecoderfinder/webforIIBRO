@@ -1,183 +1,622 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IIBRO</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAME HUB</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes title-glow{0%,100%{text-shadow:0 0 20px #7c3aed,0 0 40px #7c3aed}50%{text-shadow:0 0 50px #a855f7,0 0 100px #6d28d9}}
+@keyframes grid-pulse{0%,100%{opacity:.04}50%{opacity:.09}}
+@keyframes scan{0%{top:-100%}100%{top:200%}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ring{0%,100%{box-shadow:0 0 0 0 rgba(168,85,247,0.5)}50%{box-shadow:0 0 0 8px rgba(168,85,247,0)}}
+@keyframes dotPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(168,85,247,0.7)}50%{transform:scale(1.15);box-shadow:0 0 0 6px rgba(168,85,247,0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 
-  <!-- Auto-refresh every 5 seconds -->
+.hub{min-height:100vh;background:#000;font-family:system-ui,sans-serif;overflow:hidden;position:relative}
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.grid-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(120,80,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(120,80,255,.06) 1px,transparent 1px);background-size:44px 44px;animation:grid-pulse 4s ease-in-out infinite;pointer-events:none;z-index:0}
+.main-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem 3rem;max-width:720px;margin:0 auto}
+h1{font-size:2.5rem;font-weight:800;color:#fff;animation:title-glow 3s ease-in-out infinite;margin-bottom:.3rem;letter-spacing:3px;text-align:center}
+.sub{font-size:11px;color:#555;letter-spacing:4px;text-transform:uppercase;margin-bottom:2.5rem}
+.section-label{font-size:10px;color:#7c3aed;letter-spacing:4px;text-transform:uppercase;margin-bottom:.8rem;align-self:flex-start;display:flex;align-items:center;gap:6px;width:100%}
+.section-label::after{content:'';flex:1;height:.5px;background:rgba(120,80,255,.3)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-bottom:1.8rem}
+.card{background:rgba(255,255,255,.03);border:.5px solid rgba(120,80,255,.25);border-radius:14px;padding:1.2rem;cursor:pointer;position:relative;overflow:hidden;transition:transform .2s,border-color .2s,background .2s;animation:float 4s ease-in-out infinite}
+.card:nth-child(2){animation-delay:.6s}
+.card:hover{transform:translateY(-6px) scale(1.02);border-color:rgba(168,85,247,.9);background:rgba(120,80,255,.1)}
+.card::before{content:'';position:absolute;top:-100%;left:0;width:100%;height:50%;background:linear-gradient(transparent,rgba(168,85,247,.05),transparent);animation:scan 3.5s linear infinite}
+.card .badge{position:absolute;top:9px;right:9px;font-size:9px;color:#a855f7;border:.5px solid rgba(168,85,247,.4);border-radius:4px;padding:2px 6px;letter-spacing:1px}
+.card .icon{font-size:26px;margin-bottom:8px;display:block}
+.card .name{font-weight:600;font-size:14px;color:#fff;margin-bottom:2px}
+.card .desc{font-size:11px;color:#555}
 
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* OVERLAY */
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;flex-direction:column}
+.overlay.active{display:flex}
 
-    body {
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: Arial, Helvetica, sans-serif;
-      overflow: hidden;
-      background: linear-gradient(-45deg, orange, black, orange, black);
-      background-size: 400% 400%;
-      animation: backgroundAnimation 20s ease infinite;
-    }
+/* TOPBAR */
+.topbar{display:flex;align-items:center;gap:10px;padding:0 12px;height:48px;background:rgba(8,8,8,.98);border-bottom:.5px solid rgba(120,80,255,.3);flex-shrink:0;position:relative}
+.back-btn{background:rgba(120,80,255,.2);border:.5px solid rgba(120,80,255,.5);color:#a855f7;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:system-ui,sans-serif;white-space:nowrap;transition:background .15s;flex-shrink:0}
+.back-btn:hover{background:rgba(120,80,255,.4)}
+.urlbar{flex:1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:.5px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;min-width:0}
+.site-favicon{width:16px;height:16px;border-radius:3px;object-fit:contain;flex-shrink:0;font-size:14px}
+.site-name{font-size:13px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.emer-btn{flex-shrink:0;background:rgba(239,68,68,.15);border:.5px solid rgba(239,68,68,.4);color:#f87171;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-family:system-ui,sans-serif;animation:ring 2s ease-in-out infinite;transition:background .15s;white-space:nowrap}
+.emer-btn:hover{background:rgba(239,68,68,.3)}
+#game-frame{flex:1;border:none;width:100%;display:block;background:#000}
 
-    @keyframes backgroundAnimation {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
+/* FLOATING DOT */
+#emer-dot{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:rgba(239,68,68,.9);border:2px solid rgba(239,68,68,1);cursor:pointer;z-index:99998;display:none;align-items:center;justify-content:center;font-size:22px;animation:dotPulse 2s ease-in-out infinite;box-shadow:0 4px 20px rgba(239,68,68,.5);transition:transform .15s}
+#emer-dot:hover{transform:scale(1.1)!important}
+#emer-dot.visible{display:flex}
 
-    .container {
-      background: rgba(255, 165, 0, 0.95);
-      padding: 40px 50px;
-      border-radius: 16px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-      max-width: 600px;
-      transform: scale(0);
-      animation: popIn 1s forwards;
-    }
+/* MODALS */
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:99999;align-items:center;justify-content:center}
+.modal-bg.active{display:flex}
+.modal{background:#0d0d0d;border:.5px solid rgba(120,80,255,.4);border-radius:16px;padding:1.5rem;width:360px;max-width:94vw;animation:fadeIn .2s ease;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:16px;font-weight:600;color:#fff;margin-bottom:.4rem}
+.modal p{font-size:12px;color:#555;margin-bottom:1rem}
+.app-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.2rem}
+.app-item{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;padding:8px 4px;border-radius:10px;border:.5px solid transparent;transition:all .15s}
+.app-item:hover,.app-item.selected{border-color:rgba(168,85,247,.6);background:rgba(120,80,255,.1)}
+.app-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.app-label{font-size:10px;color:#888;text-align:center}
+.app-item.selected .app-label{color:#a855f7}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.modal-btn{padding:7px 18px;border-radius:7px;font-size:13px;cursor:pointer;font-family:system-ui,sans-serif;border:none}
+.btn-cancel{background:rgba(255,255,255,.08);color:#aaa}
+.btn-continue{background:#7c3aed;color:#fff}
+.btn-continue:disabled{background:#333;color:#555;cursor:not-allowed}
+.btn-skip{background:rgba(120,80,255,.15);color:#a855f7;border:.5px solid rgba(120,80,255,.3)!important;border-style:solid!important}
 
-    @keyframes popIn { to { transform: scale(1); } }
-    @keyframes fadeIn { to { opacity: 1; } }
+/* PROXY STEP */
+.proxy-list{display:flex;flex-direction:column;gap:8px;margin-bottom:1.2rem}
+.proxy-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:.5px solid rgba(120,80,255,.2);background:rgba(255,255,255,.02);cursor:pointer;transition:all .15s;position:relative}
+.proxy-item:hover{border-color:rgba(168,85,247,.6);background:rgba(120,80,255,.08)}
+.proxy-item.selected{border-color:rgba(168,85,247,.8);background:rgba(120,80,255,.12)}
+.proxy-num{width:22px;height:22px;border-radius:50%;border:.5px solid rgba(168,85,247,.4);display:flex;align-items:center;justify-content:center;font-size:10px;color:#a855f7;flex-shrink:0}
+.proxy-item.selected .proxy-num{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.proxy-info{flex:1;min-width:0}
+.proxy-name{font-size:13px;color:#ccc;font-weight:500}
+.proxy-url{font-size:10px;color:#444;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proxy-status{font-size:10px;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.proxy-status.testing{color:#f59e0b;background:rgba(245,158,11,.1);border:.5px solid rgba(245,158,11,.3)}
+.proxy-status.ok{color:#10b981;background:rgba(16,185,129,.1);border:.5px solid rgba(16,185,129,.3)}
+.proxy-status.previewing{color:#a855f7;background:rgba(168,85,247,.1);border:.5px solid rgba(168,85,247,.3)}
+.preview-area{width:100%;height:120px;border-radius:8px;border:.5px solid rgba(120,80,255,.2);background:#050505;margin-top:8px;overflow:hidden;display:none}
+.preview-area iframe{width:200%;height:200%;transform:scale(.5);transform-origin:0 0;border:none;pointer-events:none}
+.preview-area.visible{display:block}
 
-    .title { font-size: 56px; font-weight: 900; color: black; letter-spacing: 6px; margin-bottom: 16px; opacity: 0; animation: fadeIn 1s forwards 0.2s; }
-    .subtitle { font-size: 18px; color: black; margin-bottom: 24px; opacity: 0; animation: fadeIn 1s forwards 0.5s; }
-    .hint { font-size: 14px; opacity: 0; animation: fadeIn 1s forwards 0.8s; }
-
-    .hidden { display: none; }
-    .content-text { font-size: 16px; line-height: 1.6; margin-bottom: 24px; color: black; opacity: 0; animation: fadeIn 1s forwards 0.3s; }
-
-    .btn {
-      display: inline-block;
-      margin: 8px 12px;
-      padding: 12px 26px;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 10px;
-      border: 2px solid black;
-      background-color: black;
-      color: orange;
-      text-decoration: none;
-      cursor: pointer;
-      perspective: 1000px;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.6s;
-    }
-
-    .btn.secondary { background-color: orange; color: black; }
-    .btn:hover { transform: rotateY(var(--flip-direction, 180deg)) scale(1.05); }
-
-    .preview-box {
-      position: absolute;
-      width: 250px;
-      height: 180px;
-      top: 110%;
-      left: 50%;
-      transform: translateX(-50%) scale(0);
-      opacity: 0;
-      border: 2px solid black;
-      border-radius: 12px;
-      background: white;
-      overflow: hidden;
-      transition: all 0.4s ease;
-      z-index: 100;
-    }
-
-    .preview-box.show {
-      transform: translateX(-50%) scale(1);
-      opacity: 1;
-    }
-
-    .preview-box iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-
-  </style>
+/* LOGIN STEP */
+.login-fields{display:flex;flex-direction:column;gap:10px;margin-bottom:1.2rem}
+.login-fields input{width:100%;background:rgba(255,255,255,.05);border:.5px solid rgba(120,80,255,.3);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;font-family:system-ui,sans-serif;outline:none}
+.login-fields input:focus{border-color:rgba(168,85,247,.7)}
+.login-fields input::placeholder{color:#444}
+.step-indicator{display:flex;gap:6px;align-items:center;margin-bottom:1rem}
+.step-dot{width:6px;height:6px;border-radius:50%;background:rgba(120,80,255,.3)}
+.step-dot.active{background:#7c3aed;width:18px;border-radius:3px}
+.step-dot.done{background:rgba(120,80,255,.6)}
+.info-note{font-size:11px;color:#444;padding:8px 10px;background:rgba(255,255,255,.02);border-radius:8px;border:.5px solid rgba(255,255,255,.05);margin-bottom:1rem;line-height:1.6}
+</style>
 </head>
 <body>
 
-  <div class="container" id="intro">
-    <div class="title">IIBRO</div>
-    <div class="subtitle">Official IIBRO Website</div>
-    <div class="hint">Click anywhere to continue</div>
-    <div style="margin-top:24px; position: relative;">
-      <a class="btn" href="https://github.com/thecoderfinder/iiBro" target="_blank">GitHub
-        <div class="preview-box" id="preview-github"><iframe src="https://github.com/thecoderfinder/iiBro"></iframe></div>
-      </a>
+<div class="grid-overlay"></div>
+<canvas id="bg-canvas"></canvas>
+
+<!-- FLOATING DOT (emergency shortcut) -->
+<div id="emer-dot" title="Emergency switch" onclick="dotClicked()">🚨</div>
+
+<div class="hub">
+  <div class="main-content">
+    <h1>🎮 GAME HUB</h1>
+    <p class="sub">Unblocked · Proxied · Always On</p>
+
+    <div class="section-label">🌐 GTA Web</div>
+    <div class="grid">
+      <div class="card" onclick="startFlow('GTA Web','🌐','gta')">
+        <span class="badge">2 PROXIES</span><span class="icon">🌐</span>
+        <div class="name">Web Port</div><div class="desc">boolonx storage</div>
+      </div>
+      <div class="card" onclick="startFlow('GTA Web','🕹️','gta')" style="animation-delay:.5s">
+        <span class="badge">2 PROXIES</span><span class="icon">🕹️</span>
+        <div class="name">Game Port</div><div class="desc">itch.io proxy</div>
+      </div>
+    </div>
+
+    <div class="section-label">📐 GN Math</div>
+    <div class="grid">
+      <div class="card" onclick="startFlow('GN Math','📐','gnmath')" style="animation-delay:.3s">
+        <span class="badge">2 PROXIES</span><span class="icon">📐</span>
+        <div class="name">GN Math</div><div class="desc">Direct proxy</div>
+      </div>
+      <div class="card" onclick="startFlow('GN Math','🔢','gnmath')" style="animation-delay:.9s">
+        <span class="badge">2 PROXIES</span><span class="icon">🔢</span>
+        <div class="name">GN Math Alt</div><div class="desc">Alternate route</div>
+      </div>
+    </div>
+
+    <div class="section-label">🧮 Cool Math Games</div>
+    <div class="grid">
+      <div class="card" onclick="startFlow('Cool Math Games','🧮','coolmath')" style="animation-delay:.2s">
+        <span class="badge">2 PROXIES</span><span class="icon">🧮</span>
+        <div class="name">Cool Math</div><div class="desc">All games</div>
+      </div>
+      <div class="card" onclick="startFlow('Tiny Fishing','🎣','fishing')" style="animation-delay:.7s">
+        <span class="badge">2 PROXIES</span><span class="icon">🎣</span>
+        <div class="name">Tiny Fishing</div><div class="desc">Direct game link</div>
+      </div>
+    </div>
+
+    <div class="section-label">🔍 Google</div>
+    <div class="grid">
+      <div class="card" onclick="startFlow('Google','🔍','google')" style="animation-delay:.4s">
+        <span class="badge">2 PROXIES</span><span class="icon">🔍</span>
+        <div class="name">Google</div><div class="desc">Browse anything</div>
+      </div>
+      <div class="card" onclick="startFlow('Google Alt','🌍','google')" style="animation-delay:1s">
+        <span class="badge">2 PROXIES</span><span class="icon">🌍</span>
+        <div class="name">Google Alt</div><div class="desc">Alternate embed</div>
+      </div>
+    </div>
+
+    <div class="section-label">▶️ YouTube</div>
+    <div class="grid">
+      <div class="card" onclick="startFlow('YouTube','▶️','youtube')" style="animation-delay:.6s">
+        <span class="badge">2 PROXIES</span><span class="icon">▶️</span>
+        <div class="name">YouTube</div><div class="desc">With sound</div>
+      </div>
+      <div class="card" onclick="startFlow('YouTube Alt','📺','youtube')" style="animation-delay:1.1s">
+        <span class="badge">2 PROXIES</span><span class="icon">📺</span>
+        <div class="name">YouTube Alt</div><div class="desc">Alternate embed</div>
+      </div>
     </div>
   </div>
+</div>
 
-  <div class="container hidden" id="main">
-    <div class="title">What is IIBRO?</div>
-    <div class="content-text"><strong>IIBRO</strong> is a stylus/mod tool project for Gorillatag. The latest release fixes bugs, adds animations, sounds, and updates the menu and text font.</div>
-    <div class="content-text">You can download the release or the license file from GitHub, explore the source code, and see the full changelog.</div>
-    <div>
-      <a class="btn" href="https://github.com/thecoderfinder/iiBro" target="_blank">View GitHub
-        <div class="preview-box" id="preview-main-github"><iframe src="https://github.com/thecoderfinder/iiBro"></iframe></div>
-      </a>
-      <button class="btn secondary" onclick="goBack()">Back</button>
+<!-- GAME OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="topbar">
+    <button class="back-btn" onclick="closeFrame()">← Back</button>
+    <div class="urlbar">
+      <span class="site-favicon" id="top-icon">🌐</span>
+      <span class="site-name" id="top-name">Loading...</span>
+    </div>
+    <button class="emer-btn" onclick="dotClicked()">🚨 Emergency</button>
+  </div>
+  <iframe id="game-frame" src="" allowfullscreen
+    sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-pointer-lock allow-top-navigation-by-user-activation"
+    allow="autoplay; fullscreen"></iframe>
+</div>
+
+<!-- STEP 1: CHOOSE EMERGENCY APP -->
+<div class="modal-bg" id="emer-setup-modal">
+  <div class="modal">
+    <div class="step-indicator">
+      <div class="step-dot active" id="sd1"></div>
+      <div class="step-dot" id="sd2"></div>
+      <div class="step-dot" id="sd3"></div>
+    </div>
+    <h2>🚨 Set Emergency App</h2>
+    <p id="emer-setup-sub">Pick the app that will show when you press the dot. Tap to select — it opens right away.</p>
+    <div class="app-grid" id="app-grid-setup"></div>
+    <div class="modal-btns">
+      <button class="modal-btn btn-cancel" onclick="closeAllModals()">Cancel</button>
     </div>
   </div>
+</div>
 
-  <script>
-    function randomFlipDirection(el) { el.style.setProperty('--flip-direction', Math.random() < 0.5 ? '180deg' : '-180deg'); }
+<!-- STEP 2: CHOOSE PROXY -->
+<div class="modal-bg" id="proxy-modal">
+  <div class="modal">
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot" id="sd3b"></div>
+    </div>
+    <h2 id="proxy-modal-title">🔌 Choose a Proxy</h2>
+    <p>Try each proxy. Click one to preview it below. When you find one that works, click Continue.</p>
+    <div class="proxy-list" id="proxy-list"></div>
+    <div id="proxy-preview-wrap" class="preview-area">
+      <iframe id="proxy-preview-frame" src="" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>
+    <div class="modal-btns" style="margin-top:12px">
+      <button class="modal-btn btn-cancel" onclick="closeAllModals()">Cancel</button>
+      <button class="modal-btn btn-skip" onclick="skipToFrame()">Skip</button>
+      <button class="modal-btn btn-continue" id="proxy-continue-btn" disabled onclick="proxyConfirmed()">Continue</button>
+    </div>
+  </div>
+</div>
 
-    function addPreviewBox(btn, boxId) {
-      const box = document.getElementById(boxId);
-      let timer;
-      btn.addEventListener('mouseenter', () => {
-        randomFlipDirection(btn);
-        timer = setTimeout(() => {
-          box.classList.add('show');
-        }, 800); // preview after 0.8s hover
-      });
-      btn.addEventListener('mouseleave', () => {
-        clearTimeout(timer);
-        box.classList.remove('show');
-      });
-    }
+<!-- STEP 3: LOGIN -->
+<div class="modal-bg" id="login-modal">
+  <div class="modal">
+    <div class="step-indicator">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+    </div>
+    <h2 id="login-title">🔐 Log In (Optional)</h2>
+    <p>Want to log in to save your progress? This is optional.</p>
+    <div class="info-note">Your login stays in the page — it's not saved anywhere else.</div>
+    <div class="login-fields">
+      <input type="text" id="login-user" placeholder="Username or Email">
+      <input type="password" id="login-pass" placeholder="Password">
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn btn-cancel" onclick="closeAllModals()">Cancel</button>
+      <button class="modal-btn btn-skip" onclick="launchWithoutLogin()">Skip</button>
+      <button class="modal-btn btn-continue" onclick="launchWithLogin()">Log In &amp; Launch</button>
+    </div>
+  </div>
+</div>
 
-    addPreviewBox(document.querySelector('#intro .btn'), 'preview-github');
-    addPreviewBox(document.querySelector('#main .btn'), 'preview-main-github');
+<script>
+const APPS = [
+  {name:'IXL',icon:'📊',url:'https://www.ixl.com',hasLogin:true},
+  {name:'Reflex',icon:'🧠',url:'https://www.reflexmath.com',hasLogin:true},
+  {name:'Epic!',icon:'📚',url:'https://www.getepic.com',hasLogin:true},
+  {name:'Khan',icon:'🎓',url:'https://www.khanacademy.org',hasLogin:true},
+  {name:'Prodigy',icon:'⚔️',url:'https://www.prodigygame.com',hasLogin:true},
+  {name:'Quizlet',icon:'📝',url:'https://quizlet.com',hasLogin:true},
+  {name:'Typing.com',icon:'⌨️',url:'https://www.typing.com',hasLogin:true},
+  {name:'Google',icon:'🔍',url:'https://www.google.com',hasLogin:false},
+  // FIVE NEW WEBSITES ADDED FOR EMERGENCY PICKER (you can now pick these too)
+  {name:'DeltaMath',icon:'📐',url:'https://www.deltamath.com',hasLogin:true},
+  {name:'EdPuzzle',icon:'📽️',url:'https://edpuzzle.com',hasLogin:true},
+  {name:'Blooket',icon:'🃏',url:'https://www.blooket.com',hasLogin:true},
+  {name:'Kahoot',icon:'🎲',url:'https://kahoot.it',hasLogin:true},
+  {name:'Google Classroom',icon:'📖',url:'https://classroom.google.com',hasLogin:true}
+];
 
-    document.body.addEventListener('click', function handler(event) {
-      if (!document.getElementById('main').classList.contains('hidden')) return;
-      if (!event.target.classList.contains('btn')) {
-        document.getElementById('intro').classList.add('hidden');
-        document.getElementById('main').classList.remove('hidden');
-        animateMain();
+const PROXIES = {
+  gta:[
+    {name:'Web Port',url:'https://gtagwebstorage.boolonx.com/index.html'},
+    {name:'Game Port (itch.io)',url:'https://boolonx.itch.io/gtag-web'},
+    {name:'Mirror 3',url:'https://gtagwebstorage.boolonx.com/index.html'},
+    {name:'Mirror 4',url:'https://boolonx.itch.io/gtag-web'},
+    {name:'Mirror 5',url:'https://gtagwebstorage.boolonx.com/index.html'},
+  ],
+  gnmath:[
+    {name:'Direct',url:'https://gn-math.dev'},
+    {name:'Alt Route',url:'https://gn-math.dev'},
+    {name:'Mirror 3',url:'https://gn-math.dev'},
+    {name:'Mirror 4',url:'https://gn-math.dev'},
+    {name:'Mirror 5',url:'https://gn-math.dev'},
+  ],
+  coolmath:[
+    {name:'Main',url:'https://www.coolmathgames.com'},
+    {name:'Alt',url:'https://www.coolmathgames.com'},
+    {name:'Mirror 3',url:'https://www.coolmathgames.com'},
+    {name:'Mirror 4',url:'https://www.coolmathgames.com'},
+    {name:'Mirror 5',url:'https://www.coolmathgames.com'},
+  ],
+  fishing:[
+    {name:'Direct',url:'https://www.coolmathgames.com/0-tiny-fishing'},
+    {name:'Alt',url:'https://www.coolmathgames.com/0-tiny-fishing'},
+    {name:'Mirror 3',url:'https://www.coolmathgames.com/0-tiny-fishing'},
+    {name:'Mirror 4',url:'https://www.coolmathgames.com/0-tiny-fishing'},
+    {name:'Mirror 5',url:'https://www.coolmathgames.com/0-tiny-fishing'},
+  ],
+  google:[
+    {name:'Standard',url:'https://www.google.com'},
+    {name:'iGU Embed',url:'https://www.google.com/webhp?igu=1'},
+    {name:'Mirror 3',url:'https://www.google.com/webhp?igu=1'},
+    {name:'Mirror 4',url:'https://www.google.com/webhp?igu=1'},
+    {name:'Mirror 5',url:'https://www.google.com/webhp?igu=1'},
+  ],
+  youtube:[
+    {name:'Main',url:'https://www.youtube.com'},
+    {name:'Invidious 1',url:'https://invidious.snopyta.org'},
+    {name:'Invidious 2',url:'https://yewtu.be'},
+    {name:'Piped',url:'https://piped.kavin.rocks'},
+    {name:'Mirror 5',url:'https://invidious.privacydev.net'},
+  ],
+};
+
+// State
+let emerApp = null;
+let currentFlowName = '';
+let currentFlowIcon = '';
+let currentFlowKey = '';
+let selectedProxyUrl = '';
+let selectedProxyIndex = -1;
+let inFrame = false;
+let frameMuted = false;
+let savedVolume = 1;
+
+// --- SETUP FIRST LAUNCH FLOW ---
+function buildAppGridSetup(){
+  const g = document.getElementById('app-grid-setup');
+  g.innerHTML = '';
+  APPS.forEach((a,i)=>{
+    const d = document.createElement('div');
+    d.className = 'app-item' + (emerApp && emerApp.name===a.name?' selected':'');
+    d.innerHTML = `<div class="app-icon">${a.icon}</div><div class="app-label">${a.name}</div>`;
+    d.onclick = ()=>{
+      emerApp = APPS[i];
+      showDot();
+      document.getElementById('emer-setup-modal').classList.remove('active');
+      if(pendingFlow){
+        pendingFlow = false;
+        openProxyModal();
       }
-    });
+    };
+    g.appendChild(d);
+  });
+}
 
-    function goBack() {
-      document.getElementById('main').classList.add('hidden');
-      document.getElementById('intro').classList.remove('hidden');
-      resetAnimations();
+function showSetupModal(){
+  buildAppGridSetup();
+  document.getElementById('emer-setup-modal').classList.add('active');
+}
+
+// --- GAME FLOW ---
+function startFlow(name, icon, key){
+  currentFlowName = name;
+  currentFlowIcon = icon;
+  currentFlowKey = key;
+
+  // If no emergency app set yet, force setup first
+  if(!emerApp){
+    showSetupModal();
+    pendingFlow = true;
+    return;
+  }
+  pendingFlow = false;
+  openProxyModal();
+}
+
+let pendingFlow = false;
+
+function openProxyModal(){
+  selectedProxyIndex = -1;
+  selectedProxyUrl = '';
+  document.getElementById('proxy-modal-title').textContent = currentFlowIcon + ' ' + currentFlowName + ' — Pick a Proxy';
+  const list = document.getElementById('proxy-list');
+  list.innerHTML = '';
+  const proxies = PROXIES[currentFlowKey] || [];
+  proxies.forEach((p,i)=>{
+    const d = document.createElement('div');
+    d.className = 'proxy-item';
+    d.id = 'px-' + i;
+    d.innerHTML = `<div class="proxy-num">${i+1}</div><div class="proxy-info"><div class="proxy-name">${p.name}</div><div class="proxy-url">${p.url}</div></div><div class="proxy-status testing" id="pstat-${i}">CLICK TO TRY</div>`;
+    d.onclick = ()=>selectProxy(i, p.url);
+    list.appendChild(d);
+  });
+  document.getElementById('proxy-preview-wrap').classList.remove('visible');
+  document.getElementById('proxy-preview-frame').src = '';
+  document.getElementById('proxy-continue-btn').disabled = true;
+  document.getElementById('proxy-modal').classList.add('active');
+}
+
+function selectProxy(i, url){
+  selectedProxyIndex = i;
+  selectedProxyUrl = url;
+
+  document.querySelectorAll('.proxy-item').forEach((el,j)=>{
+    el.classList.toggle('selected', j===i);
+    const stat = document.getElementById('pstat-'+j);
+    if(j===i){
+      stat.textContent = 'PREVIEWING';
+      stat.className = 'proxy-status previewing';
     }
+  });
 
-    function animateMain() {
-      const main = document.getElementById('main');
-      main.style.animation = 'popIn 1s forwards';
-      Array.from(main.querySelectorAll('.title, .content-text')).forEach((el, i) => {
-        el.style.opacity = 0;
-        el.style.animation = `fadeIn 1s forwards ${0.2 + i*0.3}s`;
-      });
+  // Show preview
+  const wrap = document.getElementById('proxy-preview-wrap');
+  wrap.classList.add('visible');
+  document.getElementById('proxy-preview-frame').src = url;
+
+  document.getElementById('proxy-continue-btn').disabled = false;
+
+  // Simulate checking after a second
+  setTimeout(()=>{
+    const stat = document.getElementById('pstat-'+i);
+    if(stat && stat.textContent==='PREVIEWING'){
+      stat.textContent = 'LOADED ✓';
+      stat.className = 'proxy-status ok';
     }
+  }, 1200);
+}
 
-    function resetAnimations() {
-      const intro = document.getElementById('intro');
-      intro.style.animation = 'popIn 1s forwards';
-      Array.from(intro.querySelectorAll('.title, .subtitle, .hint')).forEach((el, i) => {
-        el.style.opacity = 0;
-        el.style.animation = `fadeIn 1s forwards ${0.2 + i*0.3}s`;
-      });
+function proxyConfirmed(){
+  if(selectedProxyIndex < 0) return;
+  document.getElementById('proxy-modal').classList.remove('active');
+  // Check if site has login
+  const needsLogin = true; // always offer login
+  document.getElementById('login-title').textContent = '🔐 Log In to ' + currentFlowName + '?';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-modal').classList.add('active');
+}
+
+function skipToFrame(){
+  closeAllModals();
+  launchFrame(selectedProxyUrl || (PROXIES[currentFlowKey]&&PROXIES[currentFlowKey][0].url) || '');
+}
+
+function launchWithLogin(){
+  closeAllModals();
+  launchFrame(selectedProxyUrl);
+}
+function launchWithoutLogin(){
+  closeAllModals();
+  launchFrame(selectedProxyUrl);
+}
+
+function launchFrame(url){
+  if(!url) return;
+  const frame = document.getElementById('game-frame');
+  frame.src = url;
+  document.getElementById('top-name').textContent = currentFlowName;
+  document.getElementById('top-icon').textContent = currentFlowIcon;
+  document.getElementById('overlay').classList.add('active');
+  inFrame = true;
+  // Unmute on launch
+  frameMuted = false;
+  showDot();
+}
+
+function closeFrame(){
+  // Mute before leaving
+  muteFrame();
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('game-frame').src = '';
+  inFrame = false;
+}
+
+// --- FLOATING DOT ---
+function showDot(){
+  if(emerApp) document.getElementById('emer-dot').classList.add('visible');
+}
+
+function dotClicked(){
+  if(!emerApp){
+    showSetupModal();
+    return;
+  }
+  if(inFrame){
+    // Already in frame — switch to emergency app
+    muteFrame();
+    document.getElementById('game-frame').src = emerApp.url;
+    document.getElementById('top-name').textContent = emerApp.name;
+    document.getElementById('top-icon').textContent = emerApp.icon;
+    currentFlowName = emerApp.name;
+    currentFlowIcon = emerApp.icon;
+    // Dot now returns to game
+    document.getElementById('emer-dot').title = 'Back to game';
+  } else if(document.getElementById('overlay').classList.contains('active')){
+    // We're on emergency app — go back
+    goBackFromEmer();
+  } else {
+    // Not in frame at all — open emergency app directly
+    currentFlowName = emerApp.name;
+    currentFlowIcon = emerApp.icon;
+    document.getElementById('game-frame').src = emerApp.url;
+    document.getElementById('top-name').textContent = emerApp.name;
+    document.getElementById('top-icon').textContent = emerApp.icon;
+    document.getElementById('overlay').classList.add('active');
+    inFrame = true;
+  }
+}
+
+let savedGameUrl = '';
+let savedGameName = '';
+let savedGameIcon = '';
+let inEmerMode = false;
+
+// Override dotClicked to toggle between game and emergency
+document.getElementById('emer-dot').onclick = function(){
+  if(!emerApp){ showSetupModal(); return; }
+
+  if(!document.getElementById('overlay').classList.contains('active')){
+    // Open emergency directly
+    savedGameUrl = '';
+    savedGameName = '';
+    savedGameIcon = '';
+    inEmerMode = true;
+    muteFrame();
+    document.getElementById('game-frame').src = emerApp.url;
+    document.getElementById('top-name').textContent = emerApp.name;
+    document.getElementById('top-icon').textContent = emerApp.icon;
+    document.getElementById('overlay').classList.add('active');
+    inFrame = true;
+    return;
+  }
+
+  if(!inEmerMode){
+    // Currently in game — switch to emer
+    savedGameUrl = document.getElementById('game-frame').src;
+    savedGameName = document.getElementById('top-name').textContent;
+    savedGameIcon = document.getElementById('top-icon').textContent;
+    inEmerMode = true;
+    muteFrame();
+    document.getElementById('game-frame').src = emerApp.url;
+    document.getElementById('top-name').textContent = emerApp.name;
+    document.getElementById('top-icon').textContent = emerApp.icon;
+  } else {
+    // Currently in emer — go back to game
+    inEmerMode = false;
+    if(savedGameUrl){
+      unmuteFrame();
+      document.getElementById('game-frame').src = savedGameUrl;
+      document.getElementById('top-name').textContent = savedGameName;
+      document.getElementById('top-icon').textContent = savedGameIcon;
+    } else {
+      closeFrame();
     }
-  </script>
+  }
+};
 
+function muteFrame(){
+  const frame = document.getElementById('game-frame');
+  try{
+    // Try to mute via contentWindow
+    if(frame.contentWindow){
+      frame.contentWindow.postMessage({type:'mute'},'*');
+    }
+  } catch(e){}
+  // Also mute via attribute
+  frame.setAttribute('muted','');
+  frameMuted = true;
+}
+
+function unmuteFrame(){
+  const frame = document.getElementById('game-frame');
+  try{
+    if(frame.contentWindow){
+      frame.contentWindow.postMessage({type:'unmute'},'*');
+    }
+  } catch(e){}
+  frame.removeAttribute('muted');
+  frameMuted = false;
+}
+
+function closeAllModals(){
+  document.querySelectorAll('.modal-bg').forEach(m=>m.classList.remove('active'));
+  // If we had a pending flow, open proxy now
+  if(pendingFlow && emerApp){
+    pendingFlow = false;
+    setTimeout(openProxyModal, 100);
+  }
+}
+
+// BACKGROUND ANIMATION
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W,H,stars=[],particles=[];
+function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
+resize(); window.addEventListener('resize',resize);
+for(let i=0;i<140;i++) stars.push({x:Math.random(),y:Math.random(),r:Math.random()*1.3+.2,a:Math.random()});
+for(let i=0;i<35;i++) particles.push({x:Math.random(),y:Math.random(),vy:-(Math.random()*.003+.001),vx:(Math.random()-.5)*.001,r:Math.random()*2.5+.5,a:Math.random(),h:Math.random()>.5?270:190+Math.random()*40});
+let t=0;
+function draw(){
+  ctx.clearRect(0,0,W,H); t+=.012;
+  stars.forEach(s=>{
+    s.a+=(Math.random()-.5)*.04; s.a=Math.max(.05,Math.min(.9,s.a));
+    ctx.beginPath(); ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(200,180,255,${s.a*.8})`; ctx.fill();
+  });
+  particles.forEach(p=>{
+    p.y+=p.vy; p.x+=p.vx;
+    if(p.y<-.05){p.y=1.05;p.x=Math.random();}
+    ctx.beginPath(); ctx.arc(p.x*W,p.y*H,p.r,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${p.h},80%,70%,${p.a*.55})`; ctx.fill();
+  });
+  for(let i=0;i<4;i++){
+    const cx=W*(.15+i*.25), cy=H*(.3+Math.sin(t+i*1.2)*.25);
+    const rad=60+Math.sin(t*1.3+i)*.35*60;
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,rad);
+    g.addColorStop(0,`hsla(${270+i*25},80%,55%,0.045)`); g.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+</script>
 </body>
 </html>
